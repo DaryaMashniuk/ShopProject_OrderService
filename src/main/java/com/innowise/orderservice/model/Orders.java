@@ -11,7 +11,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.builder.ToStringExclude;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
@@ -21,6 +23,8 @@ import java.util.List;
 
 @Data
 @Entity
+@Builder
+@RequiredArgsConstructor
 @Table(
         name = "orders",
         indexes = {

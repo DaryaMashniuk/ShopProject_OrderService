@@ -10,10 +10,14 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Builder;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.builder.ToStringExclude;
 
 @Data
+@Builder
+@RequiredArgsConstructor
 @Entity
 @Table(
         name = "order_items",
