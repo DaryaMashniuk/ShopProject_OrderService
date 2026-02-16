@@ -11,10 +11,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.builder.ToStringExclude;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import java.math.BigDecimal;
@@ -24,7 +25,8 @@ import java.util.List;
 @Data
 @Entity
 @Builder
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(
         name = "orders",
         indexes = {
@@ -51,10 +53,11 @@ public class Orders extends Auditable {
   @Column(nullable = false)
   private OrderStatus status;
 
+  @Builder.Default
   @Column(nullable = false)
   private boolean deleted = false;
 
-  @ToStringExclude
+  @ToString.Exclude
   @OneToMany(
           mappedBy = "order",
           cascade = CascadeType.ALL,

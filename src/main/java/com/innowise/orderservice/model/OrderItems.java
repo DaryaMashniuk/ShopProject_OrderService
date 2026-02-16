@@ -10,14 +10,17 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.builder.ToStringExclude;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+
 
 @Data
 @Builder
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 @Table(
         name = "order_items",
@@ -32,12 +35,12 @@ public class OrderItems extends Auditable{
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ToStringExclude
+  @ToString.Exclude
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "order_id")
   private Orders order;
 
-  @ToStringExclude
+  @ToString.Exclude
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "item_id")
   private Items item;

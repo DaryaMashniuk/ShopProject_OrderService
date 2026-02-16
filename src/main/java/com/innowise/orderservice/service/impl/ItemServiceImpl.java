@@ -1,8 +1,7 @@
 package com.innowise.orderservice.service.impl;
 
 import com.innowise.orderservice.model.Items;
-import com.innowise.orderservice.model.dto.OrderItemRequestDto;
-import com.innowise.orderservice.model.dto.OrderRequestDto;
+import com.innowise.orderservice.model.dto.request.OrderItemRequestDto;
 import com.innowise.orderservice.repository.ItemsRepository;
 import com.innowise.orderservice.service.ItemsService;
 import lombok.RequiredArgsConstructor;

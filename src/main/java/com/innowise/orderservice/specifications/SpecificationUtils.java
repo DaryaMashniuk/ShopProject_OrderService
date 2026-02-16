@@ -4,21 +4,27 @@ import lombok.experimental.UtilityClass;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
 
 @UtilityClass
 public class SpecificationUtils {
 
-  public static <T> Specification<T> getRange(String field, LocalDateTime start, LocalDateTime end) {
+  public static <T> Specification<T> getBefore(String field, LocalDateTime end) {
     return (root, query, cb) ->
-            start == null || end == null
-            ? null
-            : cb.between(root.get(field), start, end);
+            end == null
+                    ? null
+                    : cb.lessThanOrEqualTo(root.get(field), end);
   }
 
-  public static <T> Specification<T> equalsString(String field, String value) {
+  public static <T> Specification<T> getAfter(String field, LocalDateTime start) {
     return (root, query, cb) ->
-            value == null || value.isBlank()
+            start == null
+                    ? null
+                    : cb.greaterThanOrEqualTo(root.get(field), start);
+  }
+
+  public static <T> Specification<T> equalsString(String field, Object value) {
+    return (root, query, cb) ->
+            value == null
             ? null : cb.equal(root.get(field), value);
   }
 }

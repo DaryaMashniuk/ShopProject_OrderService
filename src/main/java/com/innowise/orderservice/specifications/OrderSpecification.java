@@ -1,7 +1,8 @@
 package com.innowise.orderservice.specifications;
 
+import com.innowise.orderservice.model.OrderStatus;
 import com.innowise.orderservice.model.Orders;
-import com.innowise.orderservice.model.dto.OrderSearchCriteriaDto;
+import com.innowise.orderservice.model.dto.request.OrderSearchCriteriaDto;
 import lombok.experimental.UtilityClass;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -11,15 +12,20 @@ import java.time.LocalDateTime;
 public class OrderSpecification {
 
   public static Specification<Orders> build(OrderSearchCriteriaDto criteria) {
-    return Specification.allOf(hasStatus(String.valueOf(criteria.getStatus())))
-            .and(createdInRange(criteria.getFromDate(),criteria.getToDate()));
+    return Specification.allOf(hasStatus(criteria.getStatus()))
+            .and(createdAfter(criteria.getFromDate()))
+            .and(createdBefore(criteria.getToDate()));
   }
 
   public static Specification<Orders> hasStatus(String status){
     return SpecificationUtils.equalsString("status", status);
   }
 
-  public static Specification<Orders> createdInRange(LocalDateTime from, LocalDateTime to){
-    return SpecificationUtils.getRange("created_at", from, to);
+  public static Specification<Orders> createdAfter(LocalDateTime from){
+    return SpecificationUtils.getAfter("createdAt", from);
+  }
+
+  public static Specification<Orders> createdBefore(LocalDateTime to){
+    return SpecificationUtils.getBefore("createdAt", to);
   }
 }
