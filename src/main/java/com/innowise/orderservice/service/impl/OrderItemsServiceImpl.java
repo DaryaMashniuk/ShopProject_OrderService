@@ -42,9 +42,4 @@ public class OrderItemsServiceImpl implements OrderItemsService {
                             .build()
             ).toList();
   }
-//
-//  @Override
-//  public void deleteOrderItemsForOrderById(long orderId){
-//    orderItemsRepository.deleteByOrderId(orderId);
-//  }
 }

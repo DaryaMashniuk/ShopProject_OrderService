@@ -1,7 +1,6 @@
 package com.innowise.orderservice.service.impl;
 
-import com.innowise.orderservice.exceptions.OrderDoesNotExistException;
-import com.innowise.orderservice.exceptions.UserOrdersDoNotExistException;
+import com.innowise.orderservice.exceptions.ResourceNotFoundException;
 import com.innowise.orderservice.model.OrderItems;
 import com.innowise.orderservice.model.OrderStatus;
 import com.innowise.orderservice.model.Orders;
@@ -53,7 +52,7 @@ public class OrderServiceImpl implements OrderService {
   @Transactional(readOnly = true)
   public Orders getOrderById(Long id) {
     return ordersRepository.findById(id)
-            .orElseThrow(() -> new OrderDoesNotExistException("Order does not exist with id "+id));
+            .orElseThrow(() -> new ResourceNotFoundException("Order","id",id));
   }
 
   @Override
@@ -61,16 +60,15 @@ public class OrderServiceImpl implements OrderService {
   public List<Orders> getOrdersByUserId(Long userId) {
     Optional<List<Orders>> orders = ordersRepository.findByUserId(userId);
     if (orders.isEmpty()) {
-      throw new UserOrdersDoNotExistException("No orders for user "+userId);
+      throw new ResourceNotFoundException("User", "id", userId);
     }
-    //TODO check how the data is returned
     return orders.get();
   }
 
   @Override
   public Orders updateOrderById(Long id, OrderUpdateDto orderUpdateDto) {
     Orders order = ordersRepository.findById(id)
-            .orElseThrow(() -> new OrderDoesNotExistException("Order does not exist with id "+id));
+            .orElseThrow(() -> new ResourceNotFoundException("Order","id",id));
 
     if (orderUpdateDto.getStatus() != null) {
       order.setStatus(OrderStatus.valueOf(orderUpdateDto.getStatus().toUpperCase()));
@@ -91,7 +89,7 @@ public class OrderServiceImpl implements OrderService {
   @Override
   public void deleteOrderById(Long id) {
     Orders order = ordersRepository.findById(id)
-            .orElseThrow(() -> new OrderDoesNotExistException("Order does not exist with id "+id));
+            .orElseThrow(() -> new ResourceNotFoundException("Order","id",id));
     ordersRepository.delete(order);
   }
 
