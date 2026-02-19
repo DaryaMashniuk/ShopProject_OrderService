@@ -26,8 +26,10 @@
 		</sonar.coverage.jacoco.xmlReportPaths>
 		<sonar.coverage.exclusions>
 			**/model/**,
-			**/impl/**,
+			**/feignclient/**,
 			**/dto/**,
+			**/request/**,
+			**/response/**,
 			**/exceptions/**,
 			**/config/**,
 			**/*Application.java

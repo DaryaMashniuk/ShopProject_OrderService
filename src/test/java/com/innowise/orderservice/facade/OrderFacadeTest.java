@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional
-class OrderFacadeIntegrationTest extends BaseIntegrationTest {
+class OrderFacadeTest extends BaseIntegrationTest {
 
   @RegisterExtension
   static WireMockExtension wireMockExtension = WireMockExtension.newInstance()
