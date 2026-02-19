@@ -24,7 +24,6 @@ import java.util.Map;
         uses = {PageResponseMapper.class},
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
-@RequiredArgsConstructor
 public abstract class OrderMapper {
 
   @Autowired

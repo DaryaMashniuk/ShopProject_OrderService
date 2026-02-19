@@ -3,11 +3,9 @@ package com.innowise.orderservice;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static com.innowise.orderservice.controller.OrderControllerTest.wireMockExtension;
 
 @Testcontainers
 public abstract class AbstractIntegrationTest {

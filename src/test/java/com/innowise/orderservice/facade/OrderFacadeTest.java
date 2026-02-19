@@ -68,12 +68,9 @@ class OrderFacadeTest extends BaseIntegrationTest {
   private OrderItemRequestDto itemRequest2;
   private OrderRequestDto orderRequest;
   private OrderUpdateDto orderUpdateRequest;
-  private OrderSearchCriteriaDto searchCriteria;
   private Pageable pageable;
   private Orders savedOrder;
   private Orders savedOrder2;
-  private UserResponseDto testUser;
-  private UserResponseDto testUser2;
   private Long regularUserId = 100L;
   private Long otherUserId = 200L;
   private LocalDateTime now;
@@ -90,16 +87,13 @@ class OrderFacadeTest extends BaseIntegrationTest {
 
   @BeforeEach
   void setUp() {
-    // Очищаем БД
     ordersRepository.deleteAll();
     itemsRepository.deleteAll();
 
-    // Очищаем WireMock
     wireMockExtension.resetAll();
 
     now = LocalDateTime.now();
 
-    // Создаем тестовые предметы в БД
     testItem1 = Items.builder()
             .name("Laptop")
             .price(new BigDecimal("999.99"))
@@ -112,7 +106,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
             .build();
     testItem2 = itemsRepository.save(testItem2);
 
-    // Setup request DTOs с реальными ID из БД
     itemRequest1 = OrderItemRequestDto.builder()
             .itemId(testItem1.getId())
             .quantity(2)
@@ -141,39 +134,14 @@ class OrderFacadeTest extends BaseIntegrationTest {
             .items(updateItems)
             .build();
 
-    // Setup search criteria
-    searchCriteria = OrderSearchCriteriaDto.builder()
-            .fromDate(now.minusDays(2))
-            .toDate(now.plusDays(1))
-            .status(String.valueOf(OrderStatus.PENDING))
-            .build();
-
     pageable = PageRequest.of(0, 10);
 
-    // Setup test users
-    testUser = UserResponseDto.builder()
-            .id(regularUserId)
-            .name("John")
-            .surname("Doe")
-            .email("john.doe@example.com")
-            .build();
-
-    testUser2 = UserResponseDto.builder()
-            .id(otherUserId)
-            .name("Jane")
-            .surname("Smith")
-            .email("jane.smith@example.com")
-            .build();
-
-    // Создаем тестовые заказы в БД
     createTestOrders();
 
-    // Настраиваем WireMock stubs
     setupUserServiceStubs();
   }
 
   private void setupUserServiceStubs() {
-    // Stub для получения пользователя по email (для create и update)
     wireMockExtension.stubFor(WireMock.get(urlPathEqualTo("/userservice/api/v1/users"))
             .withQueryParam("email", equalTo("john.doe@example.com"))
             .willReturn(aResponse()
@@ -196,7 +164,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
                                 }
                                 """)));
 
-    // Stub для получения пользователя по email (jane)
     wireMockExtension.stubFor(WireMock.get(urlPathEqualTo("/userservice/api/v1/users"))
             .withQueryParam("email", equalTo("jane.smith@example.com"))
             .willReturn(aResponse()
@@ -219,7 +186,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
                                 }
                                 """)));
 
-    // Stub для получения пользователя по ID
     wireMockExtension.stubFor(WireMock.get(urlEqualTo("/userservice/api/v1/users/100"))
             .willReturn(aResponse()
                     .withStatus(200)
@@ -246,7 +212,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
                                 }
                                 """)));
 
-    // Stub для batch запроса пользователей
     wireMockExtension.stubFor(WireMock.get(urlPathEqualTo("/userservice/api/v1/users/batch"))
             .withQueryParam("ids", matching(".*"))
             .willReturn(aResponse()
@@ -269,14 +234,12 @@ class OrderFacadeTest extends BaseIntegrationTest {
                                 ]
                                 """)));
 
-    // Stub для несуществующего пользователя
     wireMockExtension.stubFor(WireMock.get(urlEqualTo("/userservice/api/v1/users/999"))
             .willReturn(aResponse()
                     .withStatus(404)
                     .withHeader("Content-Type", "application/json")
                     .withBody("{\"message\":\"User not found\"}")));
 
-    // Stub для несуществующего email
     wireMockExtension.stubFor(WireMock.get(urlPathEqualTo("/userservice/api/v1/users"))
             .withQueryParam("email", equalTo("nonexistent@example.com"))
             .willReturn(aResponse()
@@ -291,7 +254,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
   }
 
   private void createTestOrders() {
-    // Создаем заказы для разных пользователей
     savedOrder = Orders.builder()
             .userId(regularUserId)
             .status(OrderStatus.PENDING)
@@ -326,10 +288,8 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should create order successfully")
     void shouldCreateOrderSuccessfully() {
-      // When
       OrderResponseDto result = orderFacade.createOrder(orderRequest);
 
-      // Then
       assertNotNull(result);
       assertNotNull(result.getId());
       assertEquals(regularUserId, result.getUser().getId());
@@ -337,13 +297,11 @@ class OrderFacadeTest extends BaseIntegrationTest {
       assertEquals(OrderStatus.PENDING, result.getStatus());
       assertEquals(new BigDecimal("2029.97"), result.getTotalPrice());
 
-      // Verify order saved in database
-      Orders savedOrder = ordersRepository.findById(result.getId()).orElse(null);
-      assertNotNull(savedOrder);
-      assertEquals(regularUserId, savedOrder.getUserId());
-      assertEquals(OrderStatus.PENDING, savedOrder.getStatus());
+      Orders newOrder = ordersRepository.findById(result.getId()).orElse(null);
+      assertNotNull(newOrder);
+      assertEquals(regularUserId, newOrder.getUserId());
+      assertEquals(OrderStatus.PENDING, newOrder.getStatus());
 
-      // Verify WireMock interactions
       wireMockExtension.verify(getRequestedFor(urlPathEqualTo("/userservice/api/v1/users"))
               .withQueryParam("email", equalTo("john.doe@example.com")));
     }
@@ -351,13 +309,11 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should throw exception when user not found")
     void shouldThrowExceptionWhenUserNotFound() {
-      // Given
       OrderRequestDto invalidRequest = OrderRequestDto.builder()
               .email("nonexistent@example.com")
               .items(Arrays.asList(itemRequest1, itemRequest2))
               .build();
 
-      // When & Then
       assertThrows(Exception.class, () -> orderFacade.createOrder(invalidRequest));
     }
   }
@@ -369,10 +325,8 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should get order by id successfully")
     void shouldGetOrderByIdSuccessfully() {
-      // When
       OrderResponseDto result = orderFacade.getOrderById(savedOrder.getId());
 
-      // Then
       assertNotNull(result);
       assertEquals(savedOrder.getId(), result.getId());
       assertEquals(regularUserId, result.getUser().getId());
@@ -396,10 +350,8 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should get orders by user id successfully")
     void shouldGetOrdersByUserIdSuccessfully() {
-      // When
       UserOrdersListResponseDto result = orderFacade.getOrdersByUserId(regularUserId);
 
-      // Then
       assertNotNull(result);
       assertNotNull(result.getUser());
       assertEquals(regularUserId, result.getUser().getId());
@@ -415,7 +367,7 @@ class OrderFacadeTest extends BaseIntegrationTest {
       UserOrdersListResponseDto result = orderFacade.getOrdersByUserId(999L);
 
       assertNotNull(result);
-      assertNotNull(result.getUser()); // Теперь он не null, так как WireMock его отдал
+      assertNotNull(result.getUser());
       assertEquals(999L, result.getUser().getId());
       assertTrue(result.getOrders().isEmpty());
     }
@@ -423,7 +375,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should handle multiple orders for same user")
     void shouldHandleMultipleOrdersForSameUser() {
-      // Given - create another order for same user
       Orders anotherOrder = Orders.builder()
               .userId(regularUserId)
               .status(OrderStatus.DELIVERED)
@@ -433,10 +384,8 @@ class OrderFacadeTest extends BaseIntegrationTest {
       anotherOrder.setUpdatedAt(now);
       ordersRepository.save(anotherOrder);
 
-      // When
       UserOrdersListResponseDto result = orderFacade.getOrdersByUserId(regularUserId);
 
-      // Then
       assertNotNull(result);
       assertEquals(2, result.getOrders().size());
     }
@@ -449,21 +398,17 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should update order successfully")
     void shouldUpdateOrderSuccessfully() {
-      // When
       OrderResponseDto result = orderFacade.updateOrderById(savedOrder.getId(), orderUpdateRequest);
 
-      // Then
       assertNotNull(result);
       assertEquals(savedOrder.getId(), result.getId());
       assertEquals(regularUserId, result.getUser().getId());
       assertEquals(OrderStatus.APPROVED, result.getStatus());
 
-      // Verify order updated in database
       Orders updatedOrder = ordersRepository.findById(savedOrder.getId()).orElse(null);
       assertNotNull(updatedOrder);
       assertEquals(OrderStatus.APPROVED, updatedOrder.getStatus());
 
-      // Verify WireMock interactions (called twice: for update and for get)
       wireMockExtension.verify(1, getRequestedFor(urlPathEqualTo("/userservice/api/v1/users"))
               .withQueryParam("email", equalTo("john.doe@example.com")));
     }
@@ -483,13 +428,10 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should delete order successfully")
     void shouldDeleteOrderSuccessfully() {
-      // When
       orderFacade.deleteOrderById(savedOrder.getId());
 
-      // Then
       assertThrows(Exception.class, () -> orderFacade.getOrderById(savedOrder.getId()));
 
-      // Verify order deleted from database
       assertFalse(ordersRepository.existsById(savedOrder.getId()));
     }
 
@@ -507,20 +449,17 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should find all orders with pagination")
     void shouldFindAllOrdersWithPagination() {
-      // When
       PageResponseDto<OrderResponseDto> result = orderFacade.findAllOrders(
               OrderSearchCriteriaDto.builder().build(),
               pageable
       );
 
-      // Then
       assertNotNull(result);
       assertEquals(2, result.getTotalElements());
       assertEquals(2, result.getContent().size());
       assertEquals(0, result.getCurrentPage());
       assertEquals(10, result.getPageSize());
 
-      // Verify WireMock batch request
       wireMockExtension.verify(getRequestedFor(urlPathEqualTo("/userservice/api/v1/users/batch"))
               .withQueryParam("ids", equalTo("100"))
               .withQueryParam("ids", equalTo("200")));
@@ -529,15 +468,12 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should filter orders by status")
     void shouldFilterOrdersByStatus() {
-      // Given
       OrderSearchCriteriaDto criteria = OrderSearchCriteriaDto.builder()
               .status(String.valueOf(OrderStatus.PENDING))
               .build();
 
-      // When
       PageResponseDto<OrderResponseDto> result = orderFacade.findAllOrders(criteria, pageable);
 
-      // Then
       assertNotNull(result);
       assertEquals(1, result.getTotalElements());
       assertEquals(OrderStatus.PENDING, result.getContent().get(0).getStatus());
@@ -546,8 +482,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should filter orders by date range")
     void shouldFilterOrdersByDateRange() {
-      // Устанавливаем диапазон так, чтобы вчерашний заказ (now - 1 день) не попал
-      // Например, от "сейчас минус 1 час" до "завтра"
       OrderSearchCriteriaDto criteria = OrderSearchCriteriaDto.builder()
               .fromDate(now.minusHours(1))
               .toDate(now.plusDays(1))
@@ -562,16 +496,13 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should handle empty page")
     void shouldHandleEmptyPage() {
-      // Given
       ordersRepository.deleteAll();
 
-      // When
       PageResponseDto<OrderResponseDto> result = orderFacade.findAllOrders(
               OrderSearchCriteriaDto.builder().build(),
               pageable
       );
 
-      // Then
       assertNotNull(result);
       assertEquals(0, result.getTotalElements());
       assertTrue(result.getContent().isEmpty());
@@ -585,21 +516,18 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should handle User Service being unavailable")
     void shouldHandleUserServiceUnavailable() {
-      // Given - make User Service return 503
       wireMockExtension.stubFor(WireMock.get(urlPathEqualTo("/userservice/api/v1/users"))
               .withQueryParam("email", equalTo("john.doe@example.com"))
               .willReturn(aResponse()
                       .withStatus(503)
                       .withHeader("Content-Type", "application/json")));
 
-      // When & Then
       assertThrows(Exception.class, () -> orderFacade.createOrder(orderRequest));
     }
 
     @Test
     @DisplayName("Should handle timeout from User Service")
     void shouldHandleTimeout() {
-      // Given - delay response
       wireMockExtension.stubFor(WireMock.get(urlPathEqualTo("/userservice/api/v1/users"))
               .withQueryParam("email", equalTo("john.doe@example.com"))
               .willReturn(aResponse()
@@ -608,7 +536,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
                       .withHeader("Content-Type", "application/json")
                       .withBody("{}")));
 
-      // When & Then
       assertThrows(Exception.class, () -> orderFacade.createOrder(orderRequest));
     }
   }

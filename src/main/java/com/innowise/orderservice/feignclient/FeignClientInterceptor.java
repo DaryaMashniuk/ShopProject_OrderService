@@ -12,7 +12,6 @@ public class FeignClientInterceptor implements RequestInterceptor {
   @Override
   public void apply(RequestTemplate requestTemplate) {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    System.out.println("Intercepting request");
     if (auth != null && auth.isAuthenticated()) {
       requestTemplate
               .header("X-User-Id", auth.getName())

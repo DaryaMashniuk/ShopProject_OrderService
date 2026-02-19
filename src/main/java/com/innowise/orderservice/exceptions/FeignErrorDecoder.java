@@ -31,7 +31,6 @@ public class FeignErrorDecoder implements ErrorDecoder {
         ErrorResponse errorResponse = objectMapper.readValue(bodyIs, ErrorResponse.class);
         errorMessage = errorResponse.getMessage();
       } catch (IOException e) {
-        System.err.println("Failed to parse Feign error body: " + e.getMessage());
         errorMessage = response.reason();
       }
     }
