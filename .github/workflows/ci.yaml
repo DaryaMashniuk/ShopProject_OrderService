@@ -47,7 +47,7 @@ jobs:
           ./mvnw clean verify sonar:sonar \
             -Dsonar.organization=daryamashniuk \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.projectKey=order-service-key
+            -Dsonar.projectKey=DaryaMashniuk_ShopProject_OrderService
 
   cd:
     name: CD - Build & Push Docker Image
