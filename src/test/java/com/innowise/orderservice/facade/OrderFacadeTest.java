@@ -14,7 +14,6 @@ import com.innowise.orderservice.model.dto.request.OrderUpdateDto;
 import com.innowise.orderservice.model.dto.response.OrderResponseDto;
 import com.innowise.orderservice.model.dto.response.PageResponseDto;
 import com.innowise.orderservice.model.dto.response.UserOrdersListResponseDto;
-import com.innowise.orderservice.model.dto.response.UserResponseDto;
 import com.innowise.orderservice.repository.ItemsRepository;
 import com.innowise.orderservice.repository.OrdersRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -39,7 +38,6 @@ import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Transactional

@@ -73,7 +73,6 @@ class OrderServiceImplTest {
   private Pageable pageable;
   private Page<Orders> orderPage;
 
-  private static final Logger logger = LogManager.getLogger(OrderServiceImplTest.class);
   @BeforeEach
   void setUp() {
     LocalDateTime now = LocalDateTime.now();
