@@ -5,9 +5,11 @@ import com.innowise.orderservice.model.Orders;
 import com.innowise.orderservice.model.dto.request.OrderRequestDto;
 import com.innowise.orderservice.model.dto.response.OrderItemResponseDto;
 import com.innowise.orderservice.model.dto.response.OrderResponseDto;
+import com.innowise.orderservice.model.dto.response.OrderResponseFromListDto;
 import com.innowise.orderservice.model.dto.response.PageResponseDto;
 import com.innowise.orderservice.model.dto.response.UserOrdersListResponseDto;
 import com.innowise.orderservice.model.dto.response.UserResponseDto;
+import lombok.RequiredArgsConstructor;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValuePropertyMappingStrategy;
@@ -22,6 +24,7 @@ import java.util.Map;
         uses = {PageResponseMapper.class},
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
 )
+@RequiredArgsConstructor
 public abstract class OrderMapper {
 
   @Autowired
@@ -32,6 +35,11 @@ public abstract class OrderMapper {
   @Mapping(target = "updatedAt", source = "order.updatedAt")
   @Mapping(target = "user", source = "userResponseDto")
   public abstract OrderResponseDto toOrderResponseDto(Orders order, UserResponseDto userResponseDto);
+
+  @Mapping(target = "id", source = "order.id")
+  @Mapping(target = "createdAt", source = "order.createdAt")
+  @Mapping(target = "updatedAt", source = "order.updatedAt")
+  public abstract OrderResponseFromListDto toOrderResponseFromListDto(Orders order);
 
   @Mapping(target = "id", ignore = true)
   @Mapping(target = "userId", ignore = true)
@@ -48,15 +56,14 @@ public abstract class OrderMapper {
 
   public abstract List<OrderItemResponseDto> toOrderItemResponseDtoList(List<OrderItems> items);
 
-  //List<OrderResponseDto> toOrderResponseDtoList(List<Orders> items);
-
   public UserOrdersListResponseDto toUserOrdersListResponseDto(List<Orders> orders, UserResponseDto user) {
     UserOrdersListResponseDto dto = new UserOrdersListResponseDto();
     dto.setOrders(
             orders.stream()
-                    .map(order -> toOrderResponseDto(order, user))
+                    .map(this::toOrderResponseFromListDto)
                     .toList()
     );
+    dto.setUser(user);
     return dto;
   }
 

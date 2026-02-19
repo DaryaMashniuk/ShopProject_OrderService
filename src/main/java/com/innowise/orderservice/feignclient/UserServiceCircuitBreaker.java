@@ -20,7 +20,7 @@ public class UserServiceCircuitBreaker {
   private final UserServiceClient userServiceClient;
   private static final Logger logger = LogManager.getLogger(UserServiceCircuitBreaker.class);
 
-  @CircuitBreaker(name = "userservice", fallbackMethod = "fallbackResponse")
+  @CircuitBreaker(name = "userservice", fallbackMethod = "fallbackResponseByEmail")
   public UserResponseDto getUserInfoByEmail(String email) {
     return userServiceClient
             .getUserInfoByEmail(email)
@@ -28,17 +28,30 @@ public class UserServiceCircuitBreaker {
             .getFirst();
   }
 
-  @CircuitBreaker(name = "userservice", fallbackMethod = "fallbackResponse")
+  @CircuitBreaker(name = "userservice", fallbackMethod = "fallbackResponseById")
   public UserResponseDto getUserInfoByUserId(Long userId) {
     return userServiceClient.getUserInfoById(userId);
   }
 
-  @CircuitBreaker(name = "userservice", fallbackMethod = "fallbackResponse")
+  @CircuitBreaker(name = "userservice", fallbackMethod = "fallbackResponseByIds")
   public List<UserResponseDto> getUsersByIds(List<Long> userIds) {
     return userServiceClient.getUsersByIds(userIds);
   }
 
-  public UserResponseDto fallbackResponse(Throwable e) {
+  public UserResponseDto fallbackResponseByEmail(String email,Throwable e) {
+    fallback(e);
+    throw new UserServiceIsDownException("User service is down",e);
+  }
+  public UserResponseDto fallbackResponseById(Long userId,Throwable e) {
+    fallback(e);
+    throw new UserServiceIsDownException("User service is down",e);
+  }
+  public List<UserResponseDto> fallbackResponseByIds(List<Long> userIds,Throwable e) {
+    fallback(e);
+    throw new UserServiceIsDownException("User service is down",e);
+  }
+
+  private void fallback(Throwable e){
     if (e instanceof feign.RetryableException) {
       logger.error("User Service is physically unreachable: {}", e.getMessage());
       throw new UserServiceIsDownException("User Service is unreachable (Connection Refused)");
@@ -52,8 +65,5 @@ public class UserServiceCircuitBreaker {
     if (e instanceof AuthorizationDeniedException) {
       throw (AuthorizationDeniedException) e;
     }
-
-
-    throw new UserServiceIsDownException("User service is down",e);
   }
 }

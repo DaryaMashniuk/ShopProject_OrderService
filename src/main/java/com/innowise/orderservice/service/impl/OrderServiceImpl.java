@@ -59,9 +59,6 @@ public class OrderServiceImpl implements OrderService {
   @Transactional(readOnly = true)
   public List<Orders> getOrdersByUserId(Long userId) {
     Optional<List<Orders>> orders = ordersRepository.findByUserId(userId);
-    if (orders.isEmpty()) {
-      throw new ResourceNotFoundException("User", "id", userId);
-    }
     return orders.get();
   }
 
@@ -71,18 +68,17 @@ public class OrderServiceImpl implements OrderService {
             .orElseThrow(() -> new ResourceNotFoundException("Order","id",id));
 
     if (orderUpdateDto.getStatus() != null) {
+
+      if (orderUpdateDto.getItems() != null &&  order.getStatus() == OrderStatus.PENDING) {
+        List<OrderItems> orderItems = orderItemsService.createOrderItems(order,orderUpdateDto.getItems());
+
+        order.getOrderItems().clear();
+        order.getOrderItems().addAll(orderItems);
+
+        order.setTotalPrice(calculateTotalPrice(orderItems));
+      }
       order.setStatus(OrderStatus.valueOf(orderUpdateDto.getStatus().toUpperCase()));
     }
-
-    if (orderUpdateDto.getItems() != null && order.getStatus() == OrderStatus.PENDING) {
-      List<OrderItems> orderItems = orderItemsService.createOrderItems(order,orderUpdateDto.getItems());
-
-      order.getOrderItems().clear();
-      order.getOrderItems().addAll(orderItems);
-
-      order.setTotalPrice(calculateTotalPrice(orderItems));
-    }
-
     return order;
   }
 

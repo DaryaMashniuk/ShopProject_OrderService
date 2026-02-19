@@ -16,6 +16,9 @@ import java.util.List;
 public class UserOrdersListResponseDto {
 
   @Schema(description = "List of orders")
-  private List<OrderResponseDto> orders;
+  private List<OrderResponseFromListDto> orders;
+
+  @Schema(description = "User information")
+  private UserResponseDto user;
 
 }

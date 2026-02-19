@@ -30,7 +30,8 @@ public class OrderItemsServiceImpl implements OrderItemsService {
     Map<Long,Integer> itemsQuantity = requestItems.stream()
             .collect(Collectors.toMap(
                     OrderItemRequestDto::getItemId,
-                    OrderItemRequestDto::getQuantity
+                    OrderItemRequestDto::getQuantity,
+                    Integer::sum
             ));
 
     return items.stream()
