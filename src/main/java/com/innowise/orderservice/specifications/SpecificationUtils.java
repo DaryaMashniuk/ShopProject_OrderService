@@ -4,6 +4,7 @@ import lombok.experimental.UtilityClass;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @UtilityClass
 public class SpecificationUtils {
@@ -22,9 +23,10 @@ public class SpecificationUtils {
                     : cb.greaterThanOrEqualTo(root.get(field), start);
   }
 
-  public static <T> Specification<T> equalsString(String field, Object value) {
+  public static <T> Specification<T> in(String field, List<?> values) {
     return (root, query, cb) ->
-            value == null
-            ? null : cb.equal(root.get(field), value);
+            (values == null || values.isEmpty())
+                    ? null
+                    : root.get(field).in(values);
   }
 }

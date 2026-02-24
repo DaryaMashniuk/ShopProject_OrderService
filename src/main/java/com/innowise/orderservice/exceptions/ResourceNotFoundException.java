@@ -1,5 +1,8 @@
 package com.innowise.orderservice.exceptions;
 
+import java.util.Collection;
+import java.util.stream.Collectors;
+
 public class ResourceNotFoundException extends RuntimeException {
   public ResourceNotFoundException(String message) {
     super(message);
@@ -19,5 +22,11 @@ public class ResourceNotFoundException extends RuntimeException {
   public ResourceNotFoundException(String resourceName, String fieldName, Object fieldValue) {
     super(String.format("%s not found with %s: '%s'",
             resourceName, fieldName, fieldValue));
+  }
+
+  public ResourceNotFoundException(String resourceName, String fieldName, Collection<?> fieldValues) {
+    super(String.format("%s not found with %s: [%s]",
+            resourceName, fieldName,
+            fieldValues.stream().map(Object::toString).collect(Collectors.joining(", "))));
   }
 }

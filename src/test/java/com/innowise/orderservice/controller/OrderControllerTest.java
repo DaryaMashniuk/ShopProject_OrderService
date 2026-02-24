@@ -19,11 +19,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -68,7 +68,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
   @Autowired
   private ItemsRepository itemsRepository;
 
-  @Mock(name = "authorisationService")
+  @MockitoBean(name = "authorisationService")
   private AuthorisationService authorisationService;
 
 
@@ -292,6 +292,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should create order successfully with admin role")
     void shouldCreateOrderSuccessfullyWithAdmin() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       mockMvc.perform(post("/api/v1/orders")
                       .contentType(MediaType.APPLICATION_JSON)
                       .content(objectMapper.writeValueAsString(orderRequest)))
@@ -319,6 +320,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should return 400 when order has no items")
     void shouldReturn400WhenOrderHasNoItems() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       OrderRequestDto invalidRequest = OrderRequestDto.builder()
               .email("john.doe@example.com")
               .items(Collections.emptyList())
@@ -334,6 +336,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should return 400 when email is invalid")
     void shouldReturn400WhenEmailInvalid() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       OrderRequestDto invalidRequest = OrderRequestDto.builder()
               .email("invalid-email")
               .items(Arrays.asList(item1, item2))
@@ -354,6 +357,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should get order by id successfully with admin role")
     void shouldGetOrderByIdSuccessfullyWithAdmin() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       mockMvc.perform(get("/api/v1/orders/{id}", savedOrder.getId()))
               .andExpect(status().isOk())
               .andExpect(jsonPath("$.id").value(savedOrder.getId()))
@@ -377,6 +381,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should return 404 when order not found")
     void shouldReturn404WhenOrderNotFound() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       mockMvc.perform(get("/api/v1/orders/{id}", 999L))
               .andExpect(status().isNotFound());
     }
@@ -390,7 +395,8 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should get orders by user id successfully with admin role")
     void shouldGetOrdersByUserIdSuccessfullyWithAdmin() throws Exception {
-      mockMvc.perform(get("/api/v1/orders/user/{userId}", regularUserId))
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
+      mockMvc.perform(get("/api/v1/orders/users/{userId}", regularUserId))
               .andExpect(status().isOk())
               .andExpect(jsonPath("$.user.id").value(regularUserId))
               .andExpect(jsonPath("$.user.email").value("john.doe@example.com"))
@@ -404,7 +410,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
       when(authorisationService.hasAdminRole(any())).thenReturn(false);
       when(authorisationService.isSelf(eq(regularUserId), any())).thenReturn(true);
 
-      mockMvc.perform(get("/api/v1/orders/user/{userId}", regularUserId)
+      mockMvc.perform(get("/api/v1/orders/users/{userId}", regularUserId)
                       .with(user(String.valueOf(regularUserId)).authorities(new SimpleGrantedAuthority("ROLE_USER"))))
               .andExpect(status().isOk())
               .andExpect(jsonPath("$.user.id").value(regularUserId))
@@ -417,7 +423,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
       when(authorisationService.hasAdminRole(any())).thenReturn(false);
       when(authorisationService.isSelf(eq(otherUserId), any())).thenReturn(false);
 
-      mockMvc.perform(get("/api/v1/orders/user/{userId}", otherUserId)
+      mockMvc.perform(get("/api/v1/orders/users/{userId}", otherUserId)
                       .with(user(String.valueOf(regularUserId)).authorities(new SimpleGrantedAuthority("ROLE_USER"))))
               .andExpect(status().isForbidden());
     }
@@ -431,6 +437,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should update order successfully with admin role")
     void shouldUpdateOrderSuccessfullyWithAdmin() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       mockMvc.perform(patch("/api/v1/orders/{id}", savedOrder.getId())
                       .contentType(MediaType.APPLICATION_JSON)
                       .content(objectMapper.writeValueAsString(orderUpdateRequest)))
@@ -455,6 +462,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should return 404 when updating non-existent order")
     void shouldReturn404WhenUpdatingNonExistentOrder() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       mockMvc.perform(patch("/api/v1/orders/{id}", 999L)
                       .contentType(MediaType.APPLICATION_JSON)
                       .content(objectMapper.writeValueAsString(orderUpdateRequest)))
@@ -470,10 +478,10 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should delete order successfully with admin role")
     void shouldDeleteOrderSuccessfullyWithAdmin() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       mockMvc.perform(delete("/api/v1/orders/{id}", savedOrder.getId()))
               .andExpect(status().isNoContent());
 
-      // Verify order is deleted
       mockMvc.perform(get("/api/v1/orders/{id}", savedOrder.getId()))
               .andExpect(status().isNotFound());
     }
@@ -481,7 +489,6 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @Test
     @DisplayName("Should return 403 when regular user tries to delete order")
     void shouldReturnForbiddenWhenRegularUserDeletesOrder() throws Exception {
-      when(authorisationService.hasAdminRole(any())).thenReturn(false);
 
       mockMvc.perform(delete("/api/v1/orders/{id}", savedOrder.getId())
                       .with(user(String.valueOf(regularUserId)).authorities(new SimpleGrantedAuthority("ROLE_USER"))))
@@ -492,6 +499,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should return 404 when deleting non-existent order")
     void shouldReturn404WhenDeletingNonExistentOrder() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       mockMvc.perform(delete("/api/v1/orders/{id}", 999L))
               .andExpect(status().isNotFound());
     }
@@ -505,6 +513,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should find all orders with pagination")
     void shouldFindAllOrdersWithPagination() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       mockMvc.perform(get("/api/v1/orders")
                       .param("page", "0")
                       .param("size", "10"))
@@ -522,6 +531,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should filter orders by status")
     void shouldFilterOrdersByStatus() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       mockMvc.perform(get("/api/v1/orders")
                       .param("status", "PENDING")
                       .param("page", "0")
@@ -536,6 +546,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Should filter orders by date range")
     void shouldFilterOrdersByDateRange() throws Exception {
+      when(authorisationService.hasAdminRole(any())).thenReturn(true);
       LocalDateTime now = LocalDateTime.now();
 
       mockMvc.perform(get("/api/v1/orders")

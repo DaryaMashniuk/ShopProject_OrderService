@@ -20,7 +20,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static java.util.Collections.emptyList;
@@ -124,12 +123,11 @@ class ItemServiceImplTest {
 
       when(itemsRepository.findAllById(requestedIds)).thenReturn(foundItems);
 
-      NoSuchElementException exception = assertThrows(
-              NoSuchElementException.class,
+      assertThrows(
+              ResourceNotFoundException.class,
               () -> itemService.getItems(requestWithThreeItems)
       );
 
-      assertEquals("Some items do not exist", exception.getMessage());
       verify(itemsRepository).findAllById(anyList());
     }
 

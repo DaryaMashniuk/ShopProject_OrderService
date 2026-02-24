@@ -1,5 +1,6 @@
 package com.innowise.orderservice.service.impl;
 
+import com.innowise.orderservice.exceptions.CannotUpdateWithStatusException;
 import com.innowise.orderservice.exceptions.ResourceNotFoundException;
 import com.innowise.orderservice.model.OrderItems;
 import com.innowise.orderservice.model.OrderStatus;
@@ -19,9 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -59,8 +58,7 @@ public class OrderServiceImpl implements OrderService {
   @Override
   @Transactional(readOnly = true)
   public List<Orders> getOrdersByUserId(Long userId) {
-    Optional<List<Orders>> orders = ordersRepository.findByUserId(userId);
-    return orders.orElseGet(ArrayList::new);
+    return ordersRepository.findByUserId(userId);
   }
 
   @Override
@@ -68,16 +66,20 @@ public class OrderServiceImpl implements OrderService {
     Orders order = ordersRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Order","id",id));
 
-    if (orderUpdateDto.getStatus() != null) {
-
-      if (orderUpdateDto.getItems() != null &&  order.getStatus() == OrderStatus.PENDING) {
+    if (orderUpdateDto.getItems() != null ) {
+      if (order.getStatus() == OrderStatus.PENDING){
         List<OrderItems> orderItems = orderItemsService.createOrderItems(order,orderUpdateDto.getItems());
 
         order.getOrderItems().clear();
         order.getOrderItems().addAll(orderItems);
 
         order.setTotalPrice(calculateTotalPrice(orderItems));
+      } else {
+        throw new CannotUpdateWithStatusException("Cannot update items for order in status: " + order.getStatus());
       }
+    }
+
+    if (orderUpdateDto.getStatus() != null) {
       order.setStatus(OrderStatus.valueOf(orderUpdateDto.getStatus().toUpperCase()));
     }
     return order;
@@ -94,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
   @Transactional(readOnly = true)
   public Page<Orders> findAllOrders(OrderSearchCriteriaDto orderSearchCriteriaDto, Pageable pageable) {
     boolean noFilters =
-            orderSearchCriteriaDto.getStatus() == null &&
+            (orderSearchCriteriaDto.getStatus() == null || orderSearchCriteriaDto.getStatus().isEmpty()) &&
                     orderSearchCriteriaDto.getFromDate() == null &&
                     orderSearchCriteriaDto.getToDate() == null;
     Page<Orders> orders;

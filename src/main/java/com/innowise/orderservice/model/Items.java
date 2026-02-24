@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -21,7 +22,12 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "items")
+@Table(
+        name = "items",
+        indexes = {
+                @Index(name = "idx_items_name", columnList = "name"),
+                @Index(name = "idx_items_created_at", columnList = "created_at")
+        })
 public class Items extends Auditable{
 
   @Id

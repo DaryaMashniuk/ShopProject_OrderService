@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
@@ -55,7 +56,7 @@ public class OrderController  implements OrderControllerApi {
           "@authorisationService.hasAdminRole(authentication) or " +
                   "@authorisationService.isSelf(#userId, authentication)"
   )
-  @GetMapping("/user/{userId}")
+  @GetMapping("/users/{userId}")
   public ResponseEntity<UserOrdersListResponseDto> getOrdersByUserId(@PathVariable("userId") Long userId) {
     UserOrdersListResponseDto userOrdersListResponseDto = orderFacade.getOrdersByUserId(userId);
     return ResponseEntity.ok().body(userOrdersListResponseDto);
@@ -84,7 +85,7 @@ public class OrderController  implements OrderControllerApi {
   public ResponseEntity<PageResponseDto<OrderResponseDto>> findAllOrders(
           @RequestParam(required = false) LocalDateTime fromDate,
           @RequestParam(required = false) LocalDateTime toDate,
-          @RequestParam(required = false) String status,
+          @RequestParam(required = false) List<String> status,
           @ParameterObject Pageable pageable) {
     OrderSearchCriteriaDto criteria = OrderSearchCriteriaDto.builder()
             .fromDate(fromDate)

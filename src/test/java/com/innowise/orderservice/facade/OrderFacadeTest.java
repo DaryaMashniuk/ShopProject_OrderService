@@ -467,7 +467,7 @@ class OrderFacadeTest extends BaseIntegrationTest {
     @DisplayName("Should filter orders by status")
     void shouldFilterOrdersByStatus() {
       OrderSearchCriteriaDto criteria = OrderSearchCriteriaDto.builder()
-              .status(String.valueOf(OrderStatus.PENDING))
+              .status(Collections.singletonList(String.valueOf(OrderStatus.PENDING)))
               .build();
 
       PageResponseDto<OrderResponseDto> result = orderFacade.findAllOrders(criteria, pageable);

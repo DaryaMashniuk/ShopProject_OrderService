@@ -43,6 +43,22 @@ public class GlobalExceptionHandler {
     return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
   }
 
+  @ExceptionHandler(CannotUpdateWithStatusException.class)
+  public ResponseEntity<ErrorResponse> CannotUpdateWithStatusException(
+          CannotUpdateWithStatusException exception,
+          WebRequest request) {
+    ErrorResponse errorResponse = new ErrorResponse(
+            Instant.now(),
+            HttpStatus.BAD_REQUEST.value(),
+            HttpStatus.BAD_REQUEST.getReasonPhrase(),
+            exception.getMessage(),
+            request.getDescription(false),
+            null
+    );
+
+    return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+  }
+
   @ExceptionHandler(ItemWithThatNameAlreadyExistsException.class)
   public ResponseEntity<ErrorResponse> handleItemWithThatNameAlreadyExists(
           ItemWithThatNameAlreadyExistsException ex,

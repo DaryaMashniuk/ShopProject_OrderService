@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @RequiredArgsConstructor
 @Transactional
@@ -30,12 +29,21 @@ public class ItemServiceImpl implements ItemsService {
     List<Long> itemsIds = orderItemRequestDtos
             .stream()
             .map(OrderItemRequestDto::getItemId)
+            .distinct()
             .toList();
 
     List<Items> items = itemsRepository.findAllById(itemsIds);
 
     if (items.size() != itemsIds.size()) {
-      throw new NoSuchElementException("Some items do not exist");
+      List<Long> foundIds = items
+              .stream()
+              .map(Items::getId)
+              .toList();
+      List<Long> missingIds = itemsIds.stream()
+              .filter(id -> !foundIds.contains(id))
+              .toList();
+
+      throw new ResourceNotFoundException("Items", "ids", missingIds);
     }
     return items;
   }
@@ -44,7 +52,7 @@ public class ItemServiceImpl implements ItemsService {
   public ItemsResponseDto createItem(ItemsRequestDto itemsRequestDto) {
     Items items = itemMapper.toEntity(itemsRequestDto);
     if (existsByName(itemsRequestDto.getName())) {
-      throw new ItemWithThatNameAlreadyExistsException("Item already exists with name"+itemsRequestDto.getName());
+      throw new ItemWithThatNameAlreadyExistsException("Item already exists with name "+itemsRequestDto.getName());
     }
     Items savedItem = itemsRepository.save(items);
     return itemMapper.toResponseDto(savedItem);

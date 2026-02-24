@@ -1,5 +1,6 @@
 package com.innowise.orderservice.service.impl;
 
+import com.innowise.orderservice.exceptions.CannotUpdateWithStatusException;
 import com.innowise.orderservice.exceptions.ResourceNotFoundException;
 import com.innowise.orderservice.model.Items;
 import com.innowise.orderservice.model.OrderItems;
@@ -10,8 +11,6 @@ import com.innowise.orderservice.model.dto.request.OrderSearchCriteriaDto;
 import com.innowise.orderservice.model.dto.request.OrderUpdateDto;
 import com.innowise.orderservice.repository.OrdersRepository;
 import com.innowise.orderservice.service.OrderItemsService;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -151,7 +150,7 @@ class OrderServiceImplTest {
     searchCriteria = OrderSearchCriteriaDto.builder()
             .fromDate(now.minusDays(2))
             .toDate(now)
-            .status(String.valueOf(OrderStatus.PENDING))
+            .status(Collections.singletonList(String.valueOf(OrderStatus.PENDING)))
             .build();
 
     pageable = PageRequest.of(0, 10);
@@ -283,7 +282,7 @@ class OrderServiceImplTest {
       Long userId = 100L;
       List<Orders> expectedOrders = Arrays.asList(testOrder, testOrder2);
 
-      when(ordersRepository.findByUserId(userId)).thenReturn(Optional.of(expectedOrders));
+      when(ordersRepository.findByUserId(userId)).thenReturn(expectedOrders);
 
       List<Orders> foundOrders = orderService.getOrdersByUserId(userId);
 
@@ -300,7 +299,7 @@ class OrderServiceImplTest {
     void shouldReturnEmptyListWhenUserHasNoOrders() {
       Long userId = 200L;
 
-      when(ordersRepository.findByUserId(userId)).thenReturn(Optional.of(Collections.emptyList()));
+      when(ordersRepository.findByUserId(userId)).thenReturn(Collections.emptyList());
 
       List<Orders> foundOrders = orderService.getOrdersByUserId(userId);
 
@@ -365,12 +364,12 @@ class OrderServiceImplTest {
       Long orderId = 2L;
       when(ordersRepository.findById(orderId)).thenReturn(Optional.of(testOrder2));
 
-      Orders updatedOrder = orderService.updateOrderById(orderId, orderUpdateDto);
+      CannotUpdateWithStatusException exception = assertThrows(
+              CannotUpdateWithStatusException.class,
+              () -> orderService.updateOrderById(orderId, orderUpdateDto)
+      );
 
-      assertEquals(OrderStatus.APPROVED, updatedOrder.getStatus());
-      assertEquals(1, updatedOrder.getOrderItems().size());
-      assertEquals(testOrder2.getOrderItems().get(0).getQuantity(),
-              updatedOrder.getOrderItems().get(0).getQuantity());
+      assertEquals("Cannot update items for order in status: APPROVED", exception.getMessage());
 
       verify(orderItemsService, never()).createOrderItems(any(), anyList());
     }

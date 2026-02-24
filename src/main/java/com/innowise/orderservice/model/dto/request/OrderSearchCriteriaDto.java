@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -38,10 +39,10 @@ public class OrderSearchCriteriaDto {
   private LocalDateTime toDate;
 
   @Schema(
-          description = "Filter by order status",
-          example = "PENDING",
+          description = "Filter by multiple order statuses",
+          example = "[\"PENDING\", \"APPROVED\"]",
           allowableValues = {"PENDING", "APPROVED", "DELIVERED"}
   )
   @ValidEnum(enumClass = OrderStatus.class, message = "Invalid order status")
-  private String status;
+  private List<String> status;
 }

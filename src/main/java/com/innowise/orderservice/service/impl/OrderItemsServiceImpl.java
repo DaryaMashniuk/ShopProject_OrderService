@@ -4,7 +4,6 @@ import com.innowise.orderservice.model.Items;
 import com.innowise.orderservice.model.OrderItems;
 import com.innowise.orderservice.model.Orders;
 import com.innowise.orderservice.model.dto.request.OrderItemRequestDto;
-import com.innowise.orderservice.repository.OrderItemsRepository;
 import com.innowise.orderservice.service.ItemsService;
 import com.innowise.orderservice.service.OrderItemsService;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,6 @@ import java.util.stream.Collectors;
 @Service
 public class OrderItemsServiceImpl implements OrderItemsService {
 
-  private final OrderItemsRepository orderItemsRepository;
   private final ItemsService itemsService;
 
   @Transactional

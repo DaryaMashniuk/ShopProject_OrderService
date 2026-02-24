@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Tag(name = "Order Management", description = "API for managing orders in the system")
@@ -177,7 +178,7 @@ public interface OrderControllerApi {
                   )
           )
   })
-  @GetMapping("/user/{userId}")
+  @GetMapping("/users/{userId}")
   ResponseEntity<UserOrdersListResponseDto> getOrdersByUserId(@PathVariable("userId") Long userId);
 
   @Operation(
@@ -250,15 +251,6 @@ public interface OrderControllerApi {
                           schema = @Schema(implementation = ErrorResponse.class)
                   )
           )
-//          ,
-//          @ApiResponse(
-//                  responseCode = "400",
-//                  description = "Cannot delete PENDING order",
-//                  content = @Content(
-//                          mediaType = "application/json",
-//                          schema = @Schema(implementation = ErrorResponse.class)
-//                  )
-//          )
   })
   @DeleteMapping("/{id}")
   ResponseEntity<Void> deleteOrderById(@PathVariable("id") Long id);
@@ -318,11 +310,11 @@ public interface OrderControllerApi {
           @RequestParam(required = false) LocalDateTime toDate,
 
           @Parameter(
-                  description = "Filter by order status",
-                  example = "PENDING",
+                  description = "Filter by multiple order statuses",
+                  example = "[\"PENDING\", \"APPROVED\"]",
                   schema = @Schema(allowableValues = {"PENDING", "APPROVED", "DELIVERED"})
           )
-          @RequestParam(required = false) String status,
+          @RequestParam(required = false) List<String> status,
 
           @ParameterObject Pageable pageable);
 }
