@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create_items_table
+      author: Darya
+      changes:
+        - createTable:
+            tableName: items
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: price
+                  type: DECIMAL(19,2)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+              - createIndex:
+                  tableName: items
+                  indexName: idx_items_name
+                  columns:
+                    - column:
+                        name: name
+              - createIndex:
+                  tableName: items
+                  indexName: idx_items_created_at
+                  columns:
+                    - column:
+                        name: created_at

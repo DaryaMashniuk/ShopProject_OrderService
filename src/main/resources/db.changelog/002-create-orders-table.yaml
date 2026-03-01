@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-orders-table
+      author: Darya
+      changes:
+        - createTable:
+            tableName: orders
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: total_price
+                  type: DECIMAL(19,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_user_id
+            columns:
+              - column:
+                  name: user_id
+
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_status
+            columns:
+              - column:
+                  name: status
+
+        - createIndex:
+            tableName: orders
+            indexName: idx_orders_created_at
+            columns:
+              - column:
+                  name: created_at
