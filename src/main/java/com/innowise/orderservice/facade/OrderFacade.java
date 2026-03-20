@@ -1,6 +1,7 @@
 package com.innowise.orderservice.facade;
 
 import com.innowise.orderservice.feignclient.UserServiceCircuitBreaker;
+import com.innowise.orderservice.kafka.OrderEventProducer;
 import com.innowise.orderservice.mapper.OrderMapper;
 import com.innowise.orderservice.model.Orders;
 import com.innowise.orderservice.model.dto.request.OrderRequestDto;
@@ -10,10 +11,12 @@ import com.innowise.orderservice.model.dto.response.OrderResponseDto;
 import com.innowise.orderservice.model.dto.response.PageResponseDto;
 import com.innowise.orderservice.model.dto.response.UserOrdersListResponseDto;
 import com.innowise.orderservice.model.dto.response.UserResponseDto;
+import com.innowise.orderservice.model.events.OrderCreatedEvent;
 import com.innowise.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,6 +30,7 @@ public class OrderFacade {
   private final OrderService orderService;
   private final OrderMapper orderMapper;
   private final UserServiceCircuitBreaker userServiceCircuitBreaker;
+  private final OrderEventProducer orderEventProducer;
 
 
   public OrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
@@ -34,6 +38,7 @@ public class OrderFacade {
 
     Orders order = orderService.createOrder(orderRequestDto.getItems(),userInfo.getId());
 
+    orderEventProducer.sendOrderCreatedEvent(order.getId(),order.getTotalPrice());
     return orderMapper.toOrderResponseDto(order,userInfo);
   }
 

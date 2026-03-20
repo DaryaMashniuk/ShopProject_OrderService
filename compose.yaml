@@ -1,5 +1,8 @@
 volumes:
   postgres_data:
+    driver: local
+  kafka_data:
+    driver: local
 
 services:
   postgres:
@@ -12,6 +15,14 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - order-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME:-admin} -d ${DB_NAME:-orderdb}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   app:
     build:
@@ -22,9 +33,55 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka-order-service:29092
+      KAFKA_PAYMENT_TOPIC_NAME: ${KAFKA_PAYMENT_TOPIC_NAME:-payment-events}
+      KAFKA_ORDER_TOPIC_NAME: ${KAFKA_ORDER_TOPIC_NAME:-order-events}
       SPRING_PROFILES_ACTIVE: docker
-
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka-order-service:
+        condition: service_healthy
     ports:
       - "8080:8080"
-    depends_on:
-      - postgres
+    networks:
+      - order-network
+
+  kafka-order-service:
+    image: apache/kafka:3.7.0
+    container_name: kafka-order-service
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-order-service:9093
+      KAFKA_LISTENERS: CONTROLLER://kafka-order-service:9093,PLAINTEXT://kafka-order-service:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-order-service:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - order-network
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+networks:
+  order-network:
+    driver: bridge

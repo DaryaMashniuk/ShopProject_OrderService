@@ -345,7 +345,7 @@ class OrderServiceImplTest {
     void shouldUpdateOnlyStatusWhenItemsNull() {
       Long orderId = 1L;
       OrderUpdateDto statusOnlyUpdate = OrderUpdateDto.builder()
-              .status("DELIVERED")
+              .status("APPROVED")
               .items(null)
               .build();
 
@@ -353,7 +353,7 @@ class OrderServiceImplTest {
 
       Orders updatedOrder = orderService.updateOrderById(orderId, statusOnlyUpdate);
 
-      assertEquals(OrderStatus.DELIVERED, updatedOrder.getStatus());
+      assertEquals(OrderStatus.APPROVED, updatedOrder.getStatus());
       assertEquals(2, updatedOrder.getOrderItems().size());
       verify(orderItemsService, never()).createOrderItems(any(), anyList());
     }
