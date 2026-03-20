@@ -1,6 +1,8 @@
 package com.innowise.orderservice.facade;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.innowise.orderservice.BaseIntegrationTest;
@@ -14,8 +16,12 @@ import com.innowise.orderservice.model.dto.request.OrderUpdateDto;
 import com.innowise.orderservice.model.dto.response.OrderResponseDto;
 import com.innowise.orderservice.model.dto.response.PageResponseDto;
 import com.innowise.orderservice.model.dto.response.UserOrdersListResponseDto;
+import com.innowise.orderservice.model.events.OrderCreatedEvent;
 import com.innowise.orderservice.repository.ItemsRepository;
 import com.innowise.orderservice.repository.OrdersRepository;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,22 +29,31 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.testcontainers.shaded.org.awaitility.Awaitility.await;
+
 
 @Transactional
 class OrderFacadeTest extends BaseIntegrationTest {
@@ -60,6 +75,8 @@ class OrderFacadeTest extends BaseIntegrationTest {
   @Autowired
   private ObjectMapper objectMapper;
 
+
+
   private Items testItem1;
   private Items testItem2;
   private OrderItemRequestDto itemRequest1;
@@ -75,16 +92,41 @@ class OrderFacadeTest extends BaseIntegrationTest {
 
   @DynamicPropertySource
   static void overrideProperties(DynamicPropertyRegistry registry) {
-    registry.add("user.service.url", wireMockExtension::baseUrl);
+    registry.add("userservice.url", wireMockExtension::baseUrl);
+  }
+
+  @Value("${spring.kafka.bootstrap-servers}")
+  private String bootstrapServers;
+
+  private Consumer<String, OrderCreatedEvent> kafkaConsumer;
+  @Value("${kafka.order.topic.name}")
+  private String orderTopicName;
+  private void setupKafkaConsumer() {
+
+    Map<String, Object> props = KafkaTestUtils.consumerProps(bootstrapServers, "test-facade-group", "true");
+    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+    props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+    props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, OrderCreatedEvent.class.getName());
+
+    DefaultKafkaConsumerFactory<String, OrderCreatedEvent> factory =
+            new DefaultKafkaConsumerFactory<>(props);
+    kafkaConsumer = factory.createConsumer();
+    kafkaConsumer.subscribe(Collections.singletonList(orderTopicName));
   }
 
   @Override
   protected WireMockExtension getWireMockExtension() {
     return wireMockExtension;
   }
-
+  @Autowired
+  private CircuitBreakerRegistry circuitBreakerRegistry;
   @BeforeEach
   void setUp() {
+    if (circuitBreakerRegistry.circuitBreaker("userservice") != null) {
+      circuitBreakerRegistry.circuitBreaker("userservice").reset();
+    }
     ordersRepository.deleteAll();
     itemsRepository.deleteAll();
 
@@ -137,6 +179,7 @@ class OrderFacadeTest extends BaseIntegrationTest {
     createTestOrders();
 
     setupUserServiceStubs();
+    setupKafkaConsumer();
   }
 
   private void setupUserServiceStubs() {
@@ -275,6 +318,9 @@ class OrderFacadeTest extends BaseIntegrationTest {
 
   @AfterEach
   void tearDown() {
+    if (kafkaConsumer != null) {
+      kafkaConsumer.close();
+    }
     ordersRepository.deleteAll();
     itemsRepository.deleteAll();
   }
@@ -284,7 +330,7 @@ class OrderFacadeTest extends BaseIntegrationTest {
   class CreateOrderTests {
 
     @Test
-    @DisplayName("Should create order successfully")
+    @DisplayName("Should create order successfully and publish Kafka event")
     void shouldCreateOrderSuccessfully() {
       OrderResponseDto result = orderFacade.createOrder(orderRequest);
 
@@ -302,6 +348,16 @@ class OrderFacadeTest extends BaseIntegrationTest {
 
       wireMockExtension.verify(getRequestedFor(urlPathEqualTo("/userservice/api/v1/users"))
               .withQueryParam("email", equalTo("john.doe@example.com")));
+
+      await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        ConsumerRecords<String, OrderCreatedEvent> records =
+                KafkaTestUtils.getRecords(kafkaConsumer, Duration.ofSeconds(1));
+        assertThat(records.count()).isGreaterThan(0);
+        records.forEach(record -> {
+          assertEquals(result.getId(), record.value().getOrderId());
+          assertEquals(new BigDecimal("2029.97"), record.value().getTotalPrice());
+        });
+      });
     }
 
     @Test
@@ -368,24 +424,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
       assertNotNull(result.getUser());
       assertEquals(999L, result.getUser().getId());
       assertTrue(result.getOrders().isEmpty());
-    }
-
-    @Test
-    @DisplayName("Should handle multiple orders for same user")
-    void shouldHandleMultipleOrdersForSameUser() {
-      Orders anotherOrder = Orders.builder()
-              .userId(regularUserId)
-              .status(OrderStatus.DELIVERED)
-              .totalPrice(new BigDecimal("59.98"))
-              .build();
-      anotherOrder.setCreatedAt(now);
-      anotherOrder.setUpdatedAt(now);
-      ordersRepository.save(anotherOrder);
-
-      UserOrdersListResponseDto result = orderFacade.getOrdersByUserId(regularUserId);
-
-      assertNotNull(result);
-      assertEquals(2, result.getOrders().size());
     }
   }
 

@@ -20,7 +20,7 @@ public class UserServiceCircuitBreaker {
   private final UserServiceClient userServiceClient;
   private static final Logger logger = LogManager.getLogger(UserServiceCircuitBreaker.class);
 
-  @CircuitBreaker(name = "userservice", fallbackMethod = "fallback")
+  @CircuitBreaker(name = "userservice", fallbackMethod = "fallbackEmail")
   public UserResponseDto getUserInfoByEmail(String email) {
     return userServiceClient
             .getUserInfoByEmail(email)
@@ -28,18 +28,33 @@ public class UserServiceCircuitBreaker {
             .getFirst();
   }
 
-  @CircuitBreaker(name = "userservice", fallbackMethod = "fallback")
+  @CircuitBreaker(name = "userservice", fallbackMethod = "fallbackId")
   public UserResponseDto getUserInfoByUserId(Long userId) {
     return userServiceClient.getUserInfoById(userId);
   }
 
-  @CircuitBreaker(name = "userservice", fallbackMethod = "fallback")
+  @CircuitBreaker(name = "userservice", fallbackMethod = "fallbackList")
   public List<UserResponseDto> getUsersByIds(List<Long> userIds) {
     return userServiceClient.getUsersByIds(userIds);
   }
 
 
-  private void fallback(Throwable e){
+  private UserResponseDto fallbackEmail(String email, Throwable e) {
+    handleException(e);
+    return null;
+  }
+
+  private UserResponseDto fallbackId(Long id, Throwable e) {
+    handleException(e);
+    return null;
+  }
+
+  private List<UserResponseDto> fallbackList(List<Long> ids, Throwable e) {
+    handleException(e);
+    return List.of();
+  }
+
+  private void handleException(Throwable e) {
     if (e instanceof feign.RetryableException) {
       logger.error("User Service is physically unreachable: {}", e.getMessage());
       throw new UserServiceIsDownException("User Service is unreachable (Connection Refused)");

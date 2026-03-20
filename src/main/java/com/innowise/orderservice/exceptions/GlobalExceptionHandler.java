@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
@@ -42,7 +43,24 @@ public class GlobalExceptionHandler {
 
     return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
   }
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
+          MethodArgumentTypeMismatchException ex,
+          WebRequest request) {
 
+    String message = String.format("Invalid parameter ");
+
+    ErrorResponse errorResponse = new ErrorResponse(
+            Instant.now(),
+            HttpStatus.BAD_REQUEST.value(),
+            HttpStatus.BAD_REQUEST.getReasonPhrase(),
+            message,
+            request.getDescription(false),
+            null
+    );
+
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+  }
   @ExceptionHandler(CannotUpdateWithStatusException.class)
   public ResponseEntity<ErrorResponse> CannotUpdateWithStatusException(
           CannotUpdateWithStatusException exception,
