@@ -189,13 +189,12 @@ public class OrderControllerTest extends BaseIntegrationTest {
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
     props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
     props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, OrderCreatedEvent.class.getName());
-    props.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000); // Add timeout
-    props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000); // Add request timeout
+    props.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000);
+    props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000);
 
     DefaultKafkaConsumerFactory<String, OrderCreatedEvent> factory =
             new DefaultKafkaConsumerFactory<>(props);
 
-    // Add retry logic
     int maxRetries = 3;
     int retryCount = 0;
     while (retryCount < maxRetries) {
@@ -203,16 +202,16 @@ public class OrderControllerTest extends BaseIntegrationTest {
         kafkaConsumer = factory.createConsumer();
         kafkaConsumer.subscribe(Collections.singletonList(orderTopicName));
 
-        // Test the connection
+
         kafkaConsumer.partitionsFor(orderTopicName, Duration.ofSeconds(2));
-        break; // Success, exit loop
+        break;
       } catch (Exception e) {
         retryCount++;
         if (retryCount == maxRetries) {
           throw new RuntimeException("Failed to create Kafka consumer after " + maxRetries + " attempts", e);
         }
         try {
-          Thread.sleep(1000); // Wait before retry
+          Thread.sleep(1000);
         } catch (InterruptedException ie) {
           Thread.currentThread().interrupt();
           throw new RuntimeException("Interrupted while waiting for Kafka consumer", ie);
