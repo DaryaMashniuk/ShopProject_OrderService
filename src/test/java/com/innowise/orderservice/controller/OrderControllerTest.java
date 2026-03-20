@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -66,8 +67,7 @@ import java.util.Map;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.awaitility.Awaitility.await;
+
 
 public class OrderControllerTest extends BaseIntegrationTest {
 
@@ -93,6 +93,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
 
   @Value("${kafka.order.topic.name}")
   private String orderTopicName;
+
 
   private OrderItemRequestDto item1;
   private OrderItemRequestDto item2;
@@ -177,21 +178,47 @@ public class OrderControllerTest extends BaseIntegrationTest {
 
     setupKafkaConsumer();
   }
-
+  @Value("${spring.kafka.bootstrap-servers}")
+  private String bootstrapServers;
   private void setupKafkaConsumer() {
     Map<String, Object> props = new HashMap<>();
-    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+    props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     props.put(ConsumerConfig.GROUP_ID_CONFIG, "test-consumer-" + System.currentTimeMillis());
     props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
     props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
     props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, OrderCreatedEvent.class.getName());
+    props.put(ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, 5000); // Add timeout
+    props.put(ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000); // Add request timeout
 
     DefaultKafkaConsumerFactory<String, OrderCreatedEvent> factory =
             new DefaultKafkaConsumerFactory<>(props);
-    kafkaConsumer = factory.createConsumer();
-    kafkaConsumer.subscribe(Collections.singletonList(orderTopicName));
+
+    // Add retry logic
+    int maxRetries = 3;
+    int retryCount = 0;
+    while (retryCount < maxRetries) {
+      try {
+        kafkaConsumer = factory.createConsumer();
+        kafkaConsumer.subscribe(Collections.singletonList(orderTopicName));
+
+        // Test the connection
+        kafkaConsumer.partitionsFor(orderTopicName, Duration.ofSeconds(2));
+        break; // Success, exit loop
+      } catch (Exception e) {
+        retryCount++;
+        if (retryCount == maxRetries) {
+          throw new RuntimeException("Failed to create Kafka consumer after " + maxRetries + " attempts", e);
+        }
+        try {
+          Thread.sleep(1000); // Wait before retry
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new RuntimeException("Interrupted while waiting for Kafka consumer", ie);
+        }
+      }
+    }
   }
 
   private void setupUserServiceStubs() {
