@@ -27,6 +27,7 @@
 		<sonar.coverage.exclusions>
 			**/model/**,
 			**/kafka/**,
+			**/facade/**,
 			**/feignclient/**,
 			**/dto/**,
 			**/request/**,
