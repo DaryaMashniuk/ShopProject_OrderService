@@ -514,4 +514,40 @@ class OrderServiceImplTest {
       assertEquals(BigDecimal.ZERO, createdOrder.getTotalPrice());
     }
   }
+
+  @Nested
+  @DisplayName("Update Order Status Tests")
+  class UpdateOrderStatusTests {
+
+    @Test
+    @DisplayName("Should update order status successfully")
+    void shouldUpdateOrderStatusSuccessfully() {
+      Long orderId = 1L;
+      OrderStatus newStatus = OrderStatus.APPROVED;
+
+      when(ordersRepository.findById(orderId)).thenReturn(Optional.of(testOrder));
+
+      orderService.updateOrderStatus(orderId, newStatus);
+
+      assertEquals(newStatus, testOrder.getStatus());
+      verify(ordersRepository).findById(orderId);
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when updating status of non-existent order")
+    void shouldThrowExceptionWhenOrderNotFoundForStatusUpdate() {
+      Long orderId = 999L;
+      OrderStatus newStatus = OrderStatus.APPROVED;
+
+      when(ordersRepository.findById(orderId)).thenReturn(Optional.empty());
+
+      ResourceNotFoundException exception = assertThrows(
+              ResourceNotFoundException.class,
+              () -> orderService.updateOrderStatus(orderId, newStatus)
+      );
+
+      assertEquals("Order not found with id: '999'", exception.getMessage());
+      verify(ordersRepository).findById(orderId);
+    }
+  }
 }

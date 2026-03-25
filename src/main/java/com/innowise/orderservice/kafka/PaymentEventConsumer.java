@@ -2,7 +2,6 @@ package com.innowise.orderservice.kafka;
 
 import com.innowise.orderservice.model.OrderStatus;
 import com.innowise.orderservice.model.PaymentStatus;
-import com.innowise.orderservice.model.dto.request.OrderUpdateDto;
 import com.innowise.orderservice.model.events.PaymentStatusEvent;
 import com.innowise.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -25,14 +24,10 @@ public class PaymentEventConsumer {
     }
     try {
       logger.info("Received Payment Event: {}" , paymentStatusEvent);
-
-      OrderUpdateDto orderUpdateDto = new OrderUpdateDto();
-      if (PaymentStatus.FAILED.equals(paymentStatusEvent.getPaymentStatus())) {
-        orderUpdateDto.setStatus(String.valueOf(OrderStatus.FAILED));
-      } else {
-        orderUpdateDto.setStatus(String.valueOf(OrderStatus.APPROVED));
-      }
-      orderService.updateOrderById(paymentStatusEvent.getOrderId(),orderUpdateDto);
+      OrderStatus newStatus = PaymentStatus.FAILED.equals(paymentStatusEvent.getPaymentStatus())
+              ? OrderStatus.FAILED
+              : OrderStatus.APPROVED;
+      orderService.updateOrderStatus(paymentStatusEvent.getOrderId(), newStatus);
     } catch (Exception e) {
       logger.error("Failed to process PaymentEvent: {}", paymentStatusEvent, e);
     }
