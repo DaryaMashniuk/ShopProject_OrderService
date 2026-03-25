@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -446,7 +445,7 @@ public class OrderControllerTest extends BaseIntegrationTest {
               .andExpect(status().isForbidden());
       ConsumerRecords<String, OrderCreatedEvent> records =
               KafkaTestUtils.getRecords(kafkaConsumer, Duration.ofSeconds(1));
-      assertThat(records.count()).isEqualTo(0);
+      assertThat(records.count()).isZero();
     }
 
     @Test
