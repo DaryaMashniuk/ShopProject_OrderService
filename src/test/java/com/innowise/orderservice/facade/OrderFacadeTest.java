@@ -72,10 +72,6 @@ class OrderFacadeTest extends BaseIntegrationTest {
   @Autowired
   private ItemsRepository itemsRepository;
 
-  @Autowired
-  private ObjectMapper objectMapper;
-
-
 
   private Items testItem1;
   private Items testItem2;
@@ -124,9 +120,7 @@ class OrderFacadeTest extends BaseIntegrationTest {
   private CircuitBreakerRegistry circuitBreakerRegistry;
   @BeforeEach
   void setUp() {
-    if (circuitBreakerRegistry.circuitBreaker("userservice") != null) {
-      circuitBreakerRegistry.circuitBreaker("userservice").reset();
-    }
+    circuitBreakerRegistry.circuitBreaker("userservice").reset();
     ordersRepository.deleteAll();
     itemsRepository.deleteAll();
 
@@ -411,7 +405,7 @@ class OrderFacadeTest extends BaseIntegrationTest {
       assertEquals(regularUserId, result.getUser().getId());
       assertEquals("john.doe@example.com", result.getUser().getEmail());
       assertEquals(1, result.getOrders().size());
-      assertEquals(savedOrder.getId(), result.getOrders().get(0).getId());
+      assertEquals(savedOrder.getId(), result.getOrders().getFirst().getId());
 
       wireMockExtension.verify(getRequestedFor(urlEqualTo("/userservice/api/v1/users/100")));
     }
@@ -512,7 +506,7 @@ class OrderFacadeTest extends BaseIntegrationTest {
 
       assertNotNull(result);
       assertEquals(1, result.getTotalElements());
-      assertEquals(OrderStatus.PENDING, result.getContent().get(0).getStatus());
+      assertEquals(OrderStatus.PENDING, result.getContent().getFirst().getStatus());
     }
 
     @Test
@@ -526,7 +520,7 @@ class OrderFacadeTest extends BaseIntegrationTest {
       PageResponseDto<OrderResponseDto> result = orderFacade.findAllOrders(criteria, pageable);
 
       assertEquals(2, result.getTotalElements());
-      assertEquals(savedOrder.getId(), result.getContent().get(0).getId());
+      assertEquals(savedOrder.getId(), result.getContent().getFirst().getId());
     }
 
     @Test

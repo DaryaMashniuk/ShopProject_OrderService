@@ -102,9 +102,9 @@ public class OrderControllerTest extends BaseIntegrationTest {
   private Orders savedOrder2;
   private Orders savedOrder3;
   private Orders deletedOrder;
-  private Long regularUserId = 100L;
-  private Long otherUserId = 200L;
-  private Long thirdUserId = 300L;
+  private final Long regularUserId = 100L;
+  private final Long otherUserId = 200L;
+  private final Long thirdUserId = 300L;
   private Long realId1;
   private Long realId2;
   private LocalDateTime now;

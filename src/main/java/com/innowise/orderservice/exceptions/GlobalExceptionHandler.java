@@ -25,7 +25,7 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-  private Logger logger = LogManager.getLogger(GlobalExceptionHandler.class);
+  private final Logger logger = LogManager.getLogger(GlobalExceptionHandler.class);
 
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
@@ -43,13 +43,17 @@ public class GlobalExceptionHandler {
 
     return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
   }
+
   @ExceptionHandler(MethodArgumentTypeMismatchException.class)
   public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(
           MethodArgumentTypeMismatchException ex,
           WebRequest request) {
+    String parameterName = ex.getName();
+    String expectedType = ex.getRequiredType() != null ?
+            String.valueOf(ex.getRequiredType()) : "unknown type";
 
-    String message = String.format("Invalid parameter ");
-
+    String message = String.format("Invalid parameter '%s': expected type %s",
+            parameterName, expectedType);
     ErrorResponse errorResponse = new ErrorResponse(
             Instant.now(),
             HttpStatus.BAD_REQUEST.value(),
@@ -61,10 +65,10 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
   }
+
   @ExceptionHandler(CannotUpdateWithStatusException.class)
-  public ResponseEntity<ErrorResponse> CannotUpdateWithStatusException(
-          CannotUpdateWithStatusException exception,
-          WebRequest request) {
+  public ResponseEntity<ErrorResponse> handleCannotUpdateWithStatusException(  // Fixed: method name starts with lowercase
+                                                                               CannotUpdateWithStatusException exception, WebRequest request) {
     ErrorResponse errorResponse = new ErrorResponse(
             Instant.now(),
             HttpStatus.BAD_REQUEST.value(),
