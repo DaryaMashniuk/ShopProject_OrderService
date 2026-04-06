@@ -111,6 +111,13 @@ public class OrderServiceImpl implements OrderService {
     return orders;
   }
 
+  @Override
+  public void updateOrderStatus(Long id, OrderStatus status) {
+    Orders order = ordersRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Order","id",id));
+    order.setStatus(status);
+  }
+
   private BigDecimal calculateTotalPrice(List<OrderItems> items) {
     return items
             .stream()

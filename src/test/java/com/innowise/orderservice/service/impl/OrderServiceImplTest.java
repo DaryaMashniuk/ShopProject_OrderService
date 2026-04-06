@@ -345,7 +345,7 @@ class OrderServiceImplTest {
     void shouldUpdateOnlyStatusWhenItemsNull() {
       Long orderId = 1L;
       OrderUpdateDto statusOnlyUpdate = OrderUpdateDto.builder()
-              .status("DELIVERED")
+              .status("APPROVED")
               .items(null)
               .build();
 
@@ -353,7 +353,7 @@ class OrderServiceImplTest {
 
       Orders updatedOrder = orderService.updateOrderById(orderId, statusOnlyUpdate);
 
-      assertEquals(OrderStatus.DELIVERED, updatedOrder.getStatus());
+      assertEquals(OrderStatus.APPROVED, updatedOrder.getStatus());
       assertEquals(2, updatedOrder.getOrderItems().size());
       verify(orderItemsService, never()).createOrderItems(any(), anyList());
     }
@@ -512,6 +512,42 @@ class OrderServiceImplTest {
       Orders createdOrder = orderService.createOrder(emptyItems, userId);
 
       assertEquals(BigDecimal.ZERO, createdOrder.getTotalPrice());
+    }
+  }
+
+  @Nested
+  @DisplayName("Update Order Status Tests")
+  class UpdateOrderStatusTests {
+
+    @Test
+    @DisplayName("Should update order status successfully")
+    void shouldUpdateOrderStatusSuccessfully() {
+      Long orderId = 1L;
+      OrderStatus newStatus = OrderStatus.APPROVED;
+
+      when(ordersRepository.findById(orderId)).thenReturn(Optional.of(testOrder));
+
+      orderService.updateOrderStatus(orderId, newStatus);
+
+      assertEquals(newStatus, testOrder.getStatus());
+      verify(ordersRepository).findById(orderId);
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when updating status of non-existent order")
+    void shouldThrowExceptionWhenOrderNotFoundForStatusUpdate() {
+      Long orderId = 999L;
+      OrderStatus newStatus = OrderStatus.APPROVED;
+
+      when(ordersRepository.findById(orderId)).thenReturn(Optional.empty());
+
+      ResourceNotFoundException exception = assertThrows(
+              ResourceNotFoundException.class,
+              () -> orderService.updateOrderStatus(orderId, newStatus)
+      );
+
+      assertEquals("Order not found with id: '999'", exception.getMessage());
+      verify(ordersRepository).findById(orderId);
     }
   }
 }

@@ -1,5 +1,6 @@
 package com.innowise.orderservice.service;
 
+import com.innowise.orderservice.model.OrderStatus;
 import com.innowise.orderservice.model.Orders;
 import com.innowise.orderservice.model.dto.request.OrderItemRequestDto;
 import com.innowise.orderservice.model.dto.request.OrderSearchCriteriaDto;
@@ -122,4 +123,22 @@ public interface OrderService {
    * @return a page of orders matching the criteria
    */
   Page<Orders> findAllOrders(OrderSearchCriteriaDto orderSearchCriteriaDto, Pageable pageable);
+
+  /**
+   * Updates only the status of an existing order.
+   *
+   * <p>This method is primarily used for internal state transitions, such as
+   * updates triggered by asynchronous payment events or delivery services.
+   * Unlike {@link #updateOrderById(Long, OrderUpdateDto)}, this method:
+   * <ul>
+   * <li>Does not require a DTO or user information</li>
+   * <li>Focuses strictly on the state machine transition of the order</li>
+   * <li>Does not trigger recalculation of prices or item modifications</li>
+   * </ul>
+   *
+   * @param id     the unique identifier of the order to update
+   * @param status the new {@link OrderStatus} to be applied to the order
+   * @throws ResourceNotFoundException if no order exists with the given ID
+   */
+  void updateOrderStatus(Long id, OrderStatus status);
 }
